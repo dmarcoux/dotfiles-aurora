@@ -1,0 +1,24 @@
+# From nohup
+nohup.out
+
+# Swap file
+*.swp
+
+# Bash
+.bash_history
+
+# Local nix-shell whenever a project doesn't have a development environment
+shell.local.nix
+
+# nix-shell setup for Elixir
+.nix-mix.local
+.nix-hex.local
+
+# Ruby, this is almost always included in .gitignore, but just in case I ignored it too...
+.bundle
+
+# JetBrains IDEs
+.idea
+
+# Lock files from LibreOffice
+.~lock.*.odt

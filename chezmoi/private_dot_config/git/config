@@ -1,0 +1,66 @@
+[branch]
+	autoSetupRebase = "always"
+
+[commit]
+	gpgsign = true
+
+[core]
+	editor = "nvim"
+	excludesFile = "/home/dany/.config/git/ignore"
+	fileMode = true
+	pager = "delta"
+
+[credential "https://gist.github.com"]
+	helper = "gh auth git-credential"
+
+[credential "https://github.com"]
+	helper = "gh auth git-credential"
+
+# TODO: Enable this once I replaced stylix
+#[delta]
+#	syntax-theme = "base16-stylix" # See available themes with `delta --list-syntax-themes`
+
+[diff]
+	algorithm = "histogram"
+	compactionHeuristic = true
+	wsErrorHighlight = "all"
+
+[fetch]
+	prune = true
+
+[filter "lfs"]
+	clean = "git-lfs clean -- %f"
+	process = "git-lfs filter-process"
+	required = true
+	smudge = "git-lfs smudge -- %f"
+
+[gpg]
+	format = "ssh"
+
+[gpg "ssh"]
+	allowedSignersFile = "/home/dany/.ssh/allowed_signers"
+	program = "op-ssh-sign"
+
+[init]
+	defaultBranch = "main"
+
+[interactive]
+	diffFilter = "delta --color-only"
+
+[push]
+	default = "current"
+	followTags = true
+
+[rebase]
+	autoSquash = true
+
+[stash]
+	showPatch = true
+
+[status]
+	showUntrackedFiles = "all"
+
+[user]
+	email = "git@dmarcoux.com"
+	name = "Dany Marcoux"
+	signingKey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDUwJdHmZu1Cz8kLQTGtKxpzneRJw3p0wskhRi+wUtRx3of3Hakcceiw8n6N6UJQ7vpe9MoJv/e9IkdZyp5/QvHEdI/ZrrLkWc+WzFuC1nDMuu0yiV7TLEn1E63EQDgZCrsPgqOElYm51+zL4sL3ISMF7yedi2zdZNAI/kBVWaurxy2Szkw/0c+KfT8N+YO1FKJLTo9KP8hs2I7x7SUrIsPMLDYSvS//i4O9/HCZgj43StYDxfgAIgWAeD1Q5gHrjlFdmueESFeXGBDNLJwJE8LUrMUqgg9+smwt3nH/NW+klQmWzy0y9dpb5sbfHSz2PnoE3aCTNCAaFQe14oE+cN2xPyvG0Uueeg3fIFJvTZMGJB9G+g1IG2PeYo6UvarxcfUDiwEYhw9gZG9nS7+gZGnbcuezIeq7xzrW5jLnCaCI/R7vHK3yN0/8VerX7VU3CXcmMGldsaKd0QxDk1aArVqLNR+tgYpAj2MIFOprYz0oNUOKrqSlfmyVQOIbeqcnTa+IhV7uP+hjuwO6HFbkn3im6n7BGVX7aTTe/RGQBbbR9qad6Of3bRJJe0ukLwti3R4Vtx8RJ1vZ5v/k4rTHM24AzlXd6QtP3KHZ1PPJcT9nFQtQ8gcCPrP2ACXo6p9KGH5caIBAy8dDWFWgwtsvQbDsbogOOQLh4Gbtm5ymIgOcw=="
