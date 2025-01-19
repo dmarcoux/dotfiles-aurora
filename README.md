@@ -80,3 +80,9 @@ system.
    ```bash
    brew bundle --file $(dirname "$(chezmoi source-path)")/Brewfile
    ```
+
+8. Apply my dotfiles.
+
+   ```bash
+   chezmoi apply
+   ```
