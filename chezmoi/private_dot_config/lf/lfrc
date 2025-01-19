@@ -69,11 +69,10 @@ map dT trash
 
 # Every mapping starting with g (except g,) is also used in fzf to quickly cd to those directories outside of lf
 map g, :push '' # Type 2 single quotes, which is loading the ' mark. It goes to the last directory I cd'ed into.
-map g. cd /home/dany/dotfiles
+map g. cd /home/dany/.local/share/chezmoi
 map g/ cd /
 map gc cd /home/dany/.config
 map gdc cd /home/dany/documents
-map gdv cd /home/dany/documents/obsidian/
 map gdw cd /home/dany/downloads
 map ge cd /home/dany/ebooks
 map gmi cd /home/dany/music-to-import
@@ -82,7 +81,6 @@ map gpi cd /home/dany/pictures
 map gpr cd /home/dany/projets
 # Directory where USB drives are mounted
 map gr cd /run/media/
-map gsv cd "/home/dany/.steam/steam/steamapps/common/Stardew Valley"
 map gt cd /home/dany/.local/share/Trash
 map gv cd /home/dany/videos
 
