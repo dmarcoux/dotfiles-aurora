@@ -1,3 +1,4 @@
+brew "awscli" # https://aws.amazon.com/cli/
 brew "bat" # https://github.com/sharkdp/bat
 brew "chezmoi" # https://www.chezmoi.io/
 brew "devcontainer" # https://containers.dev/
