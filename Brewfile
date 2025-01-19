@@ -1,5 +1,6 @@
 brew "bat" # https://github.com/sharkdp/bat
 brew "chezmoi" # https://www.chezmoi.io/
+brew "direnv" # https://direnv.net/
 brew "fd" # https://github.com/sharkdp/fd
 brew "gh" # https://cli.github.com/
 brew "lf" # https://github.com/gokcehan/lf
