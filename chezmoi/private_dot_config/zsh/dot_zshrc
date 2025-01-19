@@ -1,0 +1,484 @@
+# TODO: Check if all programs.zsh.initExtra code from my NixOS + home-manager dotfiles has been migrated to this zsh config.
+
+typeset -U path cdpath fpath manpath
+
+# TODO: Do I need this now that zsh isn't installed with home-manager?
+# HELPDIR="/nix/store/3m3qg7cy2xzpvp4fkqahyrlvmbzvh4mi-zsh-5.9/share/zsh/$ZSH_VERSION/help"
+
+# Use emacs keymap as the default.
+bindkey -e
+
+##### Completion #####
+
+autoload -U compinit && compinit
+
+# Allow completion from within a word/phrase
+setopt COMPLETE_IN_WORD
+
+# When completing from the middle of a word, move the cursor to the end of the word
+setopt ALWAYS_TO_END
+
+# Match files beginning with a dot without explicitly specifying the dot
+setopt GLOBDOTS
+
+# Enable usage of bash autocompletion functions
+autoload -U +X bashcompinit && bashcompinit
+
+# Case insensitive
+zstyle ":completion:*" matcher-list "m:{a-zA-Z}={A-Za-z}"
+
+zstyle ":completion:*" verbose yes
+
+zstyle ":completion:*" group-name ""
+
+zstyle ":completion:*" menu select=long
+
+zstyle ":completion:*" use-compctl false
+
+##### History #####
+HISTSIZE="10000"
+SAVEHIST="10000"
+
+HISTFILE="/home/dany/.local/share/zsh/zsh_history"
+mkdir -p "$(dirname "$HISTFILE")"
+
+# TODO: What do all these options do? At the very least, explain with comments.
+setopt HIST_FCNTL_LOCK
+
+unsetopt APPEND_HISTORY
+# Do not enter command lines into the history list if they are duplicates of the previous event.
+setopt HIST_IGNORE_DUPS
+# Remove command lines from the history list when the first character on the line is a space, or when one of the expanded aliases contains a leading space
+setopt HIST_IGNORE_SPACE
+
+unsetopt HIST_EXPIRE_DUPS_FIRST
+
+setopt SHARE_HISTORY
+
+unsetopt EXTENDED_HISTORY
+
+# If a new command line being added to the history list duplicates an older one,
+# the older command is removed from the list (even if it is not the previous event)
+setopt HIST_IGNORE_ALL_DUPS
+
+# Remove superfluous blanks from each command line being added to the history
+setopt HIST_REDUCE_BLANKS
+
+##### Expandable aliases #####
+
+# Define an array to store expandable aliases
+typeset -a ealiases
+ealiases=()
+
+# Add an expandable alias
+function ealias() {
+  alias $1
+  ealiases+=(${1%%\=*})
+}
+
+# Expand expandable aliases whenever Space is pressed (as defined below in the bindkey statements)
+function expand-ealias() {
+  if [[ $LBUFFER =~ "(^|[;|&])\s*(${(j:|:)ealiases})\$" ]]; then
+    # An expandable alias was found, it will be expanded
+    zle _expand_alias
+    zle expand-word
+  fi
+
+  # Without this, Space isn't never added when this function fires
+  zle self-insert
+}
+
+zle -N expand-ealias
+
+# Space expands all expandable aliases
+bindkey -M emacs " " expand-ealias
+bindkey -M viins " " expand-ealias
+
+# Control-Space avoids expanding expandable aliases
+bindkey -M emacs "^ " magic-space
+bindkey -M viins "^ " magic-space
+
+# Normal space during searches
+bindkey -M isearch " " magic-space
+
+##### Git / GitHub (gh) #####
+
+alias gh='GH_TOKEN="$(op read '\''op://Personal/github.com/CLI Access Token'\'')" gh'
+
+# For the current branch, open the web browser to create a pull request on GitHub
+ealias ghpr='gh pr create --web'
+
+# Fork a Git repository. It clones the repository, creates the fork on GitHub and sets remotes
+# This is function is only to have something more convenient to type and be consistent in how I setup forks
+fork_repo() {
+  if [ -z "$1" ]; then
+    # Display usage
+    echo "Usage: ${funcstack[1]} git@github.com:username/repo.git"
+    return
+  fi
+
+  # Remotes:
+  # upstream is well... the upstream repository (surprise!!!)
+  # origin is the newly created fork
+  GH_TOKEN="$(op read 'op://Personal/github.com/CLI Access Token')" gh repo fork $1 --clone=true --remote=true
+}
+
+ealias g='git'
+ealias ga='git add'
+# Useful to diff untracked files, see https://stackoverflow.com/questions/24329051/what-does-git-add-intent-to-add-or-n-do-and-when-should-it-be-used
+ealias gaia='git add --intent-to-add'
+# List branches
+ealias gbra='git branch'
+# Delete a branch
+ealias gbrad='git branch -D'
+ealias gchp='git cherry-pick'
+ealias gcko='git checkout'
+# Create a new branch from current branch
+ealias gckob='git checkout -b'
+# Select a branch with fzf and switch to it
+alias gckof='git branch | fzf | cut --characters=3- | xargs --no-run-if-empty git checkout'
+ealias gclo='git clone'
+# Create a git commit (it will use any git commit message template set in config)
+ealias gco='git commit'
+# Select a commit with fzf for which a commit fixup is going to be created with the current staged changes
+ealias gcof='glo | fzf --ansi --no-sort | cut --delimiter=" " --fields=1 | xargs --no-run-if-empty git commit --fixup'
+# Create a git commit with message (it skips any git commit message template set in config)
+ealias gcom='git commit --message'
+# Create a git commit with a message and open the editor (it skips any git commit message template set in config)
+ealias gcoem='git commit --edit --message'
+ealias gcoma='git commit --amend'
+ealias gdi='git diff --relative' # show diffs relative to the current directory
+# Quickly edit changed files with `vim $(gdino)`
+ealias gdino='git diff --name-only'
+ealias gdis='git diff --staged'
+ealias gf='git fetch --tags'
+ealias gfu='git fetch --tags upstream'
+# Output: abbreviated_commit_hash (%h) | commit_message (%s) | author_name (%an, in yellow) | commit_date_relative (%cr, in green)
+ealias glo='git log --pretty=format:"%h %C(bold)|%C(reset) %s %C(bold)|%C(reset) %C(yellow)%an%C(reset) %C(bold)|%C(reset) %C(green)%cr%C(reset)" --max-count=100'
+# Copy a string from the output of the glo alias (a commit hash for example)
+alias gloy='glo | yank'
+ealias gmer='git merge'
+# Select a branch with fzf and merge it in the current branch
+alias gmerf='git branch | fzf | cut --characters=3- | xargs --no-run-if-empty git merge'
+ealias gpu='git push'
+# Force push changes, but only if it won't overwrite changes from someone else on remote
+ealias gpuf='git push --force-with-lease'
+ealias gpure='git pull --rebase --autostash'
+ealias greb='git rebase'
+ealias grebc='git rebase --continue'
+# From the output of the glo alias, select with fzf the commit hash to rebase on
+alias grebi='glo | fzf --ansi --no-sort | cut --delimiter=" " --fields=1 | xargs --no-run-if-empty -I % bash -c "</dev/tty git rebase --interactive %"'
+ealias gref='git reflog' # then: git reset HEAD@{index}
+ealias gres='git reset'
+ealias grev='git revert'
+ealias grst='git restore --staged'
+# Select commit(s) with fzf and revert it
+alias grevf='glo | fzf --ansi --no-sort --multi | cut --delimiter=" " --fields=1 | xargs --no-run-if-empty git revert'
+ealias gsh='git show'
+# Select a commit with fzf and show it
+alias gshf='glo | fzf --ansi --no-sort --preview "echo {} | cut --delimiter=\" \" --fields=1 | xargs git show" | cut --delimiter=" " --fields=1 | xargs --no-run-if-empty git show'
+ealias gst='git status'
+ealias gsta='git stash'
+# Select a stash with fzf and show it
+ealias gstaf='git stash list | fzf --no-sort | sed -n "s/^stash@{\(.*\)}.*/\1/p" | xargs --no-run-if-empty git stash show'
+ealias gstal='git stash list'
+ealias gsu='git submodule update'
+
+# Add a Git repository (source) with its complete history to another one (destination). It doesn't overwrite the destination, the source's history is simply added
+# - "source" and "destination" have to be the URL to a repo. Example: git@github.com:dmarcoux/dotfiles.git
+add_repo() {
+  if [ -z "$1" ] || [ -z "$2" ]; then
+    # Display usage
+    echo "Usage: ${funcstack[1]} git@github.com:example/source_repo.git git@github.com:example/destination_repo.git"
+    return
+  fi
+
+  SOURCE="$1"
+  DESTINATION="$2"
+
+  # Setup temporary directories
+  mkdir ~/tmp
+  rm --recursive --force ~/tmp/source ~/tmp/destination
+
+  # Clone source Git repository
+  git clone $SOURCE ~/tmp/source
+
+  # Get the default branch (it's not always 'master'... there are other cases like 'gh-pages' for GitHub pages for example)
+  cd ~/tmp/source
+  SOURCE_DEFAULT_BRANCH="$(git remote show origin | sed -n 's| *HEAD branch: ||p')"
+
+  # Clone destination Git repository
+  git clone $DESTINATION ~/tmp/destination
+
+  # Get the default branch (it's not always 'master'... there are other cases like 'gh-pages' for GitHub pages for example)
+  cd ~/tmp/destination
+  DESTINATION_DEFAULT_BRANCH="$(git remote show origin | sed -n 's| *HEAD branch: ||p')"
+
+  # Add source remote in destination
+  git remote add source $SOURCE
+
+  # Pull source's default branch in destination's
+  git checkout $DESTINATION_DEFAULT_BRANCH
+  git pull source $SOURCE_DEFAULT_BRANCH --allow-unrelated-histories
+
+  # Remove source remote from destination
+  git remote rm source
+
+  echo 'Manual steps to be sure everything is fine'
+  echo 'git log'
+  echo 'git push'
+}
+
+# Delete merged branches after confirming (with y)
+gbramd() {
+  # Get the default branch (it's not always 'master'... there are other cases like 'gh-pages' for GitHub pages for example)
+  DEFAULT_BRANCH="$(git remote show origin | sed -n 's| *HEAD branch: ||p')"
+
+  git branch --merged | grep --extended-regexp --invert-match "(^\*|$DEFAULT_BRANCH)" | cut --characters=3- | xargs --no-run-if-empty --interactive git branch --delete
+}
+
+# Update fork of a Git repository (it has to be setup with fork_repo to follow the remote naming convention)
+update_fork() {
+  # Get the default branch (it's not always 'master'... there are other cases like 'gh-pages' for GitHub pages for example)
+  DEFAULT_BRANCH="$(git remote show origin | sed -n 's| *HEAD branch: ||p')"
+
+  # Checkout the default branch or exit if it failed (it could happen when there are changed files which prevent changing branch)
+  git checkout "$DEFAULT_BRANCH" || return 1
+
+  # Rebase the default branch on the upstream changes
+  git pull --rebase --autostash upstream "$DEFAULT_BRANCH"
+
+  # Push updated default branch to my fork
+  git push origin "$DEFAULT_BRANCH"
+
+  git submodule update
+}
+
+# Checkout branch of someone else's fork
+checkout_fork() {
+  if [ -z "$1" ]; then
+    # Display usage
+    echo "Usage: ${funcstack[1]} username:branch"
+    return
+  fi
+
+  GIT_USERNAME="$(echo "$1" | cut --delimiter=':' --fields=1)"
+  BRANCH="$(echo "$1" | cut --delimiter=':' --fields=2)"
+  REMOTE="$(git config remote.origin.url | sed -e "s|:.*/|:$GIT_USERNAME/|g")"
+
+  # Add a remote for the fork (if one with the same name doesn't already exist)
+  if ! git remote get-url "$GIT_USERNAME" > /dev/null 2>&1; then
+    git remote add "$GIT_USERNAME" "$REMOTE"
+  fi
+
+  # Fetch branches of the fork
+  git fetch --tags "$GIT_USERNAME"
+
+  # Checkout the fork's branch
+  git checkout "$GIT_USERNAME"/"$BRANCH"
+
+  # Create a local copy of the fork's branch
+  git checkout -b "$BRANCH"
+
+  # Set upstream of the branch to be able to pull changes
+  git branch --set-upstream-to="$GIT_USERNAME"/"$BRANCH" "$BRANCH"
+}
+
+##### General #####
+
+# --data '{"abc":"123","def":"'my text'"}' or --data @filename (for some file containing JSON)
+ealias curljson='curl --verbose --header "Content-Type: application/json" -X POST --data' # See above for --data, then add  http://whatever.com
+
+# Pretty print / Parse XML (so like jq, but for XML...)
+xq() {
+  if [ -z "$1" ]; then
+    # Display usage
+    echo "Usage: ${funcstack[1]} 'some string containing XML'"
+    return
+  fi
+
+  xmllint <(echo "$1")
+}
+
+# Quicker than cd ..; cd ...; etc...
+#   ~$ cd ~/dir/example/folder
+#   ~/dir/example/folder$ up 2
+#   ~/dir$
+# Credits: http://www.bashoneliners.com/oneliners/oneliner/220/ (Mostly the same)
+up() {
+  # Defaults to 1 when no argument is provided
+  VALUE=${1-1};
+
+  if [[ "$VALUE" = <-> ]]; then
+    # The value is a number
+    for i in $(seq 1 ${VALUE}); do
+      cd ../
+    done
+  fi
+}
+
+alias cbc='xsel --clipboard --input'
+alias cbcf='fc -rl 1 | fzf --header='\''Select command to copy to clipboard'\'' --tiebreak=index | sed -E "s/^ *([0-9]**?) *//g" | cbc'
+alias cbp='xsel --clipboard --output'
+alias chgrp='chgrp --preserve-root'
+alias chmod='chmod --preserve-root'
+alias chown='chown --preserve-root'
+alias cp='cp --interactive'
+alias ln='ln --interactive'
+alias mkdir='mkdir --parents --verbose'
+alias mv='mv --interactive'
+alias ping='ping -c 3'
+alias rm='rm --interactive=once --preserve-root'
+alias ssh='TERM='\''xterm-256color'\'' ssh'
+
+# Do not print an error message like "zsh: no matches found: something?" if a command with a globbing expression doesn't match anything
+unsetopt nomatch
+
+# TODO: Do I still need this?
+# Add $HOME/.npm-packages to $PATH to install npm packages globally with:
+# npm config set prefix "$HOME/.npm-packages"
+# Add $HOME/.cargo/bin to $PATH to install cargo packages globally with:
+# cargo install
+# export PATH="/home/dany/.npm-packages/bin:/home/dany/.cargo/bin:$PATH"
+
+# TODO: All the `export` lines below were copy-pasted from the file generated by home-manager `home.sessionVariables`.
+#
+# export AWS_CONFIG_FILE="/home/dany/.config/aws/config"
+
+# export BAT_THEME="base16-stylix"
+
+# export GTK2_RC_FILES="/home/dany/.config/gtk-2.0/gtkrc"
+
+# export JQ_COLORS="1;30:0;37:0;37:0;37:0;32:1;37:1;37"
+
+# TODO: Do I really need this now that I am not on NixOS?
+# export LOCALE_ARCHIVE_2_27="/nix/store/ydy3zqgw7nvm77vi7hyg9m8rv1rl6sl3-glibc-locales-2.40-36/lib/locale/locale-archive"
+
+##### Ripgrep #####
+
+export RIPGREP_CONFIG_PATH="/home/dany/.config/ripgrep/config"
+
+##### Vim / Neovim
+
+export EDITOR="nvim"
+
+alias vimdiff='nvim -d'
+
+##### X.Org Server #####
+
+# export XCOMPOSECACHE="/home/dany/.cache/X11/xcompose"
+# export XCURSOR_PATH="$XCURSOR_PATH${XCURSOR_PATH:+:}/home/dany/.nix-profile/share/icons"
+# export XCURSOR_SIZE="24"
+# export XCURSOR_THEME="Bibata-Original-Ice"
+
+##### XDG #####
+
+# TODO: Uncomment this once I've set the XDG dirs
+# export XDG_AUDIO_DIR="/home/dany/audio"
+# export XDG_CACHE_HOME="/home/dany/.cache"
+# export XDG_CONFIG_DIRS="/nix/store/pf2jrnl96hqmz99dk2ndvj1dyjafprf1-stylix-kde-config${XDG_CONFIG_DIRS:+:$XDG_CONFIG_DIRS}"
+# export XDG_CONFIG_HOME="/home/dany/.config"
+# export XDG_DATA_HOME="/home/dany/.local/share"
+# export XDG_DESKTOP_DIR="/home/dany/desktop"
+# export XDG_DOCUMENTS_DIR="/home/dany/documents"
+# export XDG_DOWNLOAD_DIR="/home/dany/downloads"
+# export XDG_EBOOKS_DIR="/home/dany/ebooks"
+# export XDG_MUSIC_DIR="/home/dany/music"
+# export XDG_PICTURES_DIR="/home/dany/pictures"
+# export XDG_PROJETS_DIR="/home/dany/projets"
+# export XDG_PUBLICSHARE_DIR="/home/dany/public"
+# export XDG_STATE_HOME="/home/dany/.local/state"
+# export XDG_TEMPLATES_DIR="/home/dany/templates"
+# export XDG_TEMPORARY_DIR="/home/dany/tmp"
+# export XDG_VIDEOS_DIR="/home/dany/videos"
+
+##### Docker / Podman / Devcontainer #####
+
+ealias dc='devcontainer'
+
+ealias doc='docker'
+ealias pod='podman'
+ealias doccom='docker compose'
+ealias podcom='podman-compose'
+
+# Start a Docker/Podman container for projects without a Docker/Podman setup (ports are mapped directly on the host, so anything running inside the container is accessible on the host)
+ealias drunb='docker run -v "$PWD:/app" --net="host" -it ruby:"$(cat .ruby-version)" bash'
+ealias prunb='podman run --volume "$PWD:/app" --workdir=/app --rm --network="host" -it ruby:"$(cat .ruby-version)" bash'
+
+# Select a locally available Docker/Podman image and run a new Docker/Podman container based on it
+ealias drunf='docker image ls | fzf --header="Select a Docker image to run a Docker container based on it" --header-lines=1 | tr --squeeze-repeats " " | cut --delimiter=" " --fields=1 | xargs --no-run-if-empty docker run'
+ealias prunf='podman image ls | fzf --header="Select a Podman image to run a Podman container based on it" --header-lines=1 | tr --squeeze-repeats " " | cut --delimiter=" " --fields=1 | xargs --no-run-if-empty podman run'
+
+# Tip: The following aliases are even better when fzf is using this as a default option: --bind ctrl-a:select-all,ctrl-d:deselect-all,ctrl-t:toggle-all
+#      We can quickly select one, multiple or all option(s)
+
+# Select Docker/Podman containers and remove them (with their volumes)
+ealias drmf='docker ps --all | fzf --header="Select Docker containers to remove (with their volumes)" --header-lines=1 --multi | tr --squeeze-repeats " " | cut --delimiter=" " --fields=1 | xargs --no-run-if-empty docker rm --volumes'
+ealias prmf='podman ps --all | fzf --header="Select Podman containers to remove (with their volumes)" --header-lines=1 --multi | tr --squeeze-repeats " " | cut --delimiter=" " --fields=1 | xargs --no-run-if-empty podman rm --volumes'
+
+# Select Podman pods and remove them (with their containers)
+ealias pprmf='podman pod ps | fzf --header="Select Podman pods to remove (with their containers)" --header-lines=1 --multi | tr --squeeze-repeats " " | cut --delimiter=" " --fields=1 | xargs --no-run-if-empty podman pod rm --force'
+
+# Select Docker/Podman containers and stop them
+ealias dstopf='docker ps | fzf --header="Select Docker containers to stop" --header-lines=1 --multi | tr --squeeze-repeats " " | cut --delimiter=" " --fields=1 | xargs --no-run-if-empty docker stop'
+ealias pstopf='podman ps | fzf --header="Select Podman containers to stop" --header-lines=1 --multi | tr --squeeze-repeats " " | cut --delimiter=" " --fields=1 | xargs --no-run-if-empty podman stop'
+
+# Select a Docker/Podman container and start shell in it
+ealias dexecf='docker ps | fzf --header="Select a Docker container and start shell in it" --header-lines=1 --multi | tr --squeeze-repeats " " | rev | cut --delimiter=" " --fields=1 | rev | xargs --no-run-if-empty -I % bash -c "</dev/tty docker exec --interactive --tty % bash --login"'
+ealias pexecf='podman ps | fzf --header="Select a Podman container and start shell in it" --header-lines=1 --multi | tr --squeeze-repeats " " | rev | cut --delimiter=" " --fields=1 | rev | xargs --no-run-if-empty -I % bash -c "</dev/tty podman exec --interactive --tty % bash --login"'
+
+# Select Docker/Podman images and remove them
+ealias drmif='docker image ls | fzf --header="Select Docker images to remove" --header-lines=1 --multi | tr --squeeze-repeats " " | cut --delimiter=" " --fields=3 | xargs --no-run-if-empty docker rmi --force'
+ealias prmif='podman image ls | fzf --header="Select Podman images to remove" --header-lines=1 --multi | tr --squeeze-repeats " " | cut --delimiter=" " --fields=3 | xargs --no-run-if-empty podman rmi --force'
+
+##### lf #####
+
+# Prevent nested lf instances, inspiration from https://wiki.archlinux.org/index.php/Ranger#Preventing_nested_ranger_instances
+lf() {
+    if [ -z "$LF_LEVEL" ]; then
+        /usr/bin/env lf "$@"
+    else
+        exit
+    fi
+}
+
+# TODO: Why? Does it change something with the lf() function defined above?
+ealias lf="lf"
+
+##### Starship #####
+
+if [[ $TERM != "dumb" ]]; then
+  # TODO: Change this to use starship from my system, not home-manager
+  # eval "$(/home/dany/.nix-profile/bin/starship init zsh)"
+fi
+
+##### Alacritty #####
+
+case "$TERM" in
+  alacritty*|xterm*)
+    precmd() { print -Pn '\e]2;zsh: %n@%~\a' } ;;
+esac
+
+##### fzf #####
+
+# TODO: Uncomment when using fzf
+# function cd_to_lf_g_mappings_and_project_directories() {
+#   local directory
+#   # Take the lf g mappings (except `g,`), format them before adding all directories under $XDG_PROJETS_DIR to the list of directories to be processed by fzf
+#   directory=$(cat ${config.xdg.configHome}/lf/lfrc | { sed -n -e 's|\s*map g[^,]* cd "\?\(.*\)"\?|\1|gp'; \ls --directory ${config.xdg.userDirs.extraConfig.XDG_PROJETS_DIR}/* } | sort | uniq | fzf)
+#
+#   cd "$directory" || echo "$directory doesn't exist."
+#
+#   zle && zle accept-line
+# }
+
+# TODO: Uncomment when using fzf
+# Define keybind CTRL+G to call the function
+# zle -N cd_to_lf_g_mappings_and_project_directories
+# bindkey '^g' cd_to_lf_g_mappings_and_project_directories
+
+# TODO: To configure fzf, maybe use this instead: https://github.com/junegunn/fzf/pull/3618. See also https://github.com/junegunn/fzf/discussions/2528
+# export FZF_ALT_C_COMMAND="command fd --hidden --type directory --exclude .git"
+# export FZF_CTRL_T_COMMAND="command fd --hidden --type file --exclude .git"
+# export FZF_DEFAULT_COMMAND="command fd --hidden --type file --exclude .git"
+# export FZF_DEFAULT_OPTS="--bind ctrl-a:select-all,ctrl-d:deselect-all,ctrl-t:toggle-all --bind 'ctrl-f:reload(command fd --hidden --type file --exclude .git --no-ignore-vcs),ctrl-g:reload(command fd --hidden --type file --exclude .git)' --min-height=100 --reverse --color fg:#848484,bg:#ffffff,hl:#186daa:bold,fg+:#ffffff,bg+:#557301,hl+:#186daa:bold --color info:#876500,prompt:#876500,pointer:#ffffff,marker:#ffffff,spinner:#876500 --no-separator --color bg:#ffffff,bg+:#ededed,fg:#636363,fg+:#555555,header:#186daa,hl:#186daa,hl+:#186daa,info:#876500,marker:#087767,pointer:#087767,prompt:#876500,spinner:#087767"
