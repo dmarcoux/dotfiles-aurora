@@ -1,0 +1,12 @@
+.git/
+
+*.swp
+
+# Minified files
+*.min.css
+*.css.map
+*.min.js
+*.js.map
+
+# Compiled files
+.sass-cache/
