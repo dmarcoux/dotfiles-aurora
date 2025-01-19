@@ -454,8 +454,7 @@ ealias lf="lf"
 ##### Starship #####
 
 if [[ $TERM != "dumb" ]]; then
-  # TODO: Change this to use starship from my system, not home-manager
-  # eval "$(/home/dany/.nix-profile/bin/starship init zsh)"
+  eval "$(starship init zsh)"
 fi
 
 ##### Alacritty #####
