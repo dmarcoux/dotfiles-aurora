@@ -19,7 +19,7 @@ system.
 
    1. Install 1Password GUI and CLI, then make them available to the host with `distrobox-export`.
 
-      _1Password instructions taken from its [official website](https://support.1password.com/install-linux/).
+      _1Password instructions taken from its [official website](https://support.1password.com/install-linux/)._
 
       ```bash
       sudo rpm --import https://downloads.1password.com/linux/keys/1password.asc &&
